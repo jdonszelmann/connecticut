@@ -2,11 +2,14 @@ from unittest import TestCase
 import game
 from test.database import DatabaseTestCase
 
+player1args = {'username' : 'joe', 'email' : 'a@b.c', 'password_hash' : 'AASDF'}
+player2args = {'username' : 'jane', 'email' : 'c@b.c', 'password_hash' : 'AAASD'}
+
 class TestGame(DatabaseTestCase):
     def test_create_game(self):
         g = game.Game.create(
-            player1=game.Player.create(name="joe"),
-            player2=game.Player.create(name="john"),
+            player1=game.Player.create(**player1args),
+            player2=game.Player.create(**player2args),
         )
         self.assertGreater(g.identifier, 0)
         self.assertEqual(g.player1.name, "joe")
@@ -18,8 +21,8 @@ class TestGame(DatabaseTestCase):
 
     def test_store_game(self):
         g = game.Game.create(
-            player1=game.Player.create(name="joe"),
-            player2=game.Player.create(name="john"),
+            player1=game.Player.create(**player1args),
+            player2=game.Player.create(**player2args),
         )
 
         try:
