@@ -1,4 +1,3 @@
-from unittest import TestCase
 import game
 from test.database import DatabaseTestCase
 

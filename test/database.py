@@ -8,7 +8,7 @@ testdbname = "test.db"
 class DatabaseTestCase(unittest.TestCase):
     def setUp(self) -> None:
         db = peewee.SqliteDatabase(testdbname)
-        game.open_connection(db)
+        game.open_connection(db, drop=True)
 
     def tearDown(self) -> None:
         os.remove(testdbname)
