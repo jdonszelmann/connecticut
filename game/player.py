@@ -8,3 +8,4 @@ class Player(database.BaseModel):
     password_hash = CharField(null=False)
 
 
+
