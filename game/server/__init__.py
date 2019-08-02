@@ -7,7 +7,7 @@ from flask import redirect
 import secrets
 import flask
 from flask_socketio import SocketIO, emit
-from .socketevents import socketevents
+from .socketevents import SocketNamespace
 
 path = os.path.dirname(os.path.realpath(__file__))
 
@@ -28,7 +28,7 @@ class Server(flask.Flask):
         self.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
         self.jwt = JWTManager(self)
 
-        self.socketio = SocketIO(self)
+        self.socketio = SocketIO(self, async_mode="threading")
 
         @self.jwt.invalid_token_loader
         def on_invalid_token():
@@ -60,7 +60,7 @@ class Server(flask.Flask):
         def handle_404(error):
             return flask.render_template("404.html"), 404
 
-        socketevents(self, self.socketio)
+        self.socketio.on_namespace(SocketNamespace('/websocket'))
         routes(self)
 
 
