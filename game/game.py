@@ -5,15 +5,16 @@ import peewee
 from peewee import ForeignKeyField, IntegerField, CharField
 
 MARKERS = (
-  # unavailable point 0
-  "┼",
-  # green piece 1
-  "O",
-  # "\033[1;32mO\033[0m",
-  # red piece -1
-  "X",
-  # "\033[1;31mO\033[0m"
+    # unavailable point 0
+    "┼",
+    # green piece 1
+    "O",
+    # "\033[1;32mO\033[0m",
+    # red piece -1
+    "X",
+    # "\033[1;31mO\033[0m"
 )
+
 
 class Game(database.BaseModel):
     player1 = ForeignKeyField(Player, backref="games1", null=True)
@@ -25,6 +26,8 @@ class Game(database.BaseModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from .piece import Piece
+        self.Piece = Piece
 
     @classmethod
     def create_default(cls, *args, **kwargs):
@@ -34,34 +37,34 @@ class Game(database.BaseModel):
         who = kwargs['player1']
         name = Config.get_config_option("defaultname")
 
-        return cls.create(*args, width=width, height=height, who=who, **kwargs)
+        return cls.create(*args, width=width, height=height, name=name, who=who, **kwargs)
 
     def start(self):
         pass
 
-    def __str__ (self):
+    def __str__(self):
         if self.width > 26:
-          raise ValueError("Width of Field cannot exede 26.")
+            raise ValueError("Width of Field cannot exede 26.")
 
         if self.height > 99:
-          raise ValueError("Height of Field cannot exede 99.")
+            raise ValueError("Height of Field cannot exede 99.")
 
-        def piece_to_int (piece):
+        def piece_to_int(piece):
             if piece == 0:
                 return 0
             else:
                 return self.player_int(piece.player)
 
         a = ['──'.join([MARKERS[piece_to_int(self.get_piece(x, y))]
-                for x in range(self.width)])
-                    for y in range(self.height)]
+                        for x in range(self.width)])
+             for y in range(self.height)]
 
-        b = ("\n   │%s\n" % ("  │" * (self.width - 1))).join([str(self.height - i).rjust(2) + ' ' + a[i] for i in range(len(a))])
+        b = ("\n   │%s\n" % ("  │" * (self.width - 1))).join(
+            [str(self.height - i).rjust(2) + ' ' + a[i] for i in range(len(a))])
         c = b + "\n   " + "  ".join("ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.width])
         return c
 
-
-    def place_piece (self, x, y):
+    def place_piece(self, x, y):
         if self.is_legal(x, y):
             self.set_piece(x, y)
             self.switch_player()
@@ -70,34 +73,60 @@ class Game(database.BaseModel):
             return True
         return False
 
-    def get_piece (self, x, y):
-        from .piece import Piece
+    def get_piece(self, x, y):
         try:
-            return Piece.select().where(
-                Piece.x == x and Piece.y == y \
-                and Piece.game == self
+            return self.Piece.select().where(
+                self.Piece.x == x and self.Piece.y == y \
+                and self.Piece.game == self
             ).get()
         except peewee.DoesNotExist:
             return 0
 
-    def set_piece (self, x, y):
-        from .piece import Piece
+    def set_piece(self, x, y):
         self.remove_piece(x, y)
-        Piece.create(x=x, y=y, player=self.who, game=self)
+        self.Piece.create(x=x, y=y, player=self.who, game=self)
 
         try:
-            in_range = Piece.select().where(
-                Piece.x >= max(1, x - 2) and \
-                Piece.x <= min(self.width - 2, x + 3) and \
-                Piece.y >= max(1, y - 2) and \
-                Piece.y <= min(self.height - 2, y + 3) and \
-                Piece.player.id != self.who.id
+            in_range = (
+                self.Piece
+                    .select()
+                    .join(Player, on=(self.Piece.player == Player.id))
+                    .where(
+                    self.Piece.x >= max(1, x - 2) and
+                    self.Piece.x <= min(self.width - 2, x + 3) and
+                    self.Piece.y >= max(1, y - 2) and
+                    self.Piece.y <= min(self.height - 2, y + 3) and
+                    Player.id == self.who
+                )
             )
+            #
+            # in_range = (
+            #     self.Piece
+            #     .select()
+            #     .join(Player, on=(self.Piece.player == Player.id))
+            #     .where(
+            #         (self.Piece.x, self.Piece.y) in (
+            #                               (x, y-2),
+            #                   (x-1, y-1), (x, y-1), (x+1, y-1),
+            #           (x-2, y), (x-1, y),           (x+1, y), (x+2, y),
+            #                   (x-1, y+1), (x, y+1), (x+1, y+1),
+            #                               (x, y+2),
+            #
+            #           #                     (x, y-2),
+            #           #         (x-1, y-1), (x, y-1), (x+1, y-1),
+            #           # (x-2, y), (x-1, y),           (x+1, y), (x+2, y),
+            #           #         (x-1, y+1), (x, y+1), (x+1, y+1),
+            #           #                     (x, y+2),
+            #         ) and
+            #  Player       Player.id == self.who
+            #     )
+            # )
+
 
             checked = []
             for piece in in_range:
                 if not self.is_connected(piece):
-                    piece.delete_instance().execute()
+                    piece.delete_instance()
 
                 elif piece not in checked:
                     pool = self.floodfill(piece)
@@ -114,11 +143,10 @@ class Game(database.BaseModel):
         except peewee.DoesNotExist:
             pass
 
-    def remove_piece (self, x, y):
-        from .piece import Piece
-        Piece.delete().where(Piece.x == x and Piece.y == y).execute()
+    def remove_piece(self, x, y):
+        self.Piece.delete().where(self.Piece.x == x and self.Piece.y == y).execute()
 
-    def floodfill (self, piece, pool=list()):
+    def floodfill(self, piece, pool=list()):
         pool.append(piece)
         for px, py in self.get_hooks(piece.x, piece.y):
             hookpiece = self.get_piece(px, py)
@@ -129,7 +157,7 @@ class Game(database.BaseModel):
                             pool = self.floodfill(hookpiece, pool)
         return pool
 
-    def get_hooks (self, x, y):
+    def get_hooks(self, x, y):
         for m in (-1, 1):
             vx, vy = 1, 2 * m
             for _ in range(4):
@@ -139,13 +167,12 @@ class Game(database.BaseModel):
                     yield px, py
                 vx, vy = vy, -vx
 
-    def get_available (self):
-        from .piece import Piece
+    def get_available(self):
         available = set()
 
-        pieces = Piece.select(Piece.x, Piece.y).where(
-            Piece.player == self.who and \
-            Piece.game == self
+        pieces = self.Piece.select(self.Piece.x, self.Piece.y).where(
+            self.Piece.player == self.who and \
+            self.Piece.game == self
         )
 
         for piece in pieces:
@@ -170,9 +197,9 @@ class Game(database.BaseModel):
                             yield x, y
                             available.add((x, y))
 
-    def is_available_from (self, piece, hx, hy):
-        mx = 1 if hx>piece.x else -1
-        my = 1 if hy>piece.y else -1
+    def is_available_from(self, piece, hx, hy):
+        mx = 1 if hx > piece.x else -1
+        my = 1 if hy > piece.y else -1
 
         detected = 0
 
@@ -195,23 +222,23 @@ class Game(database.BaseModel):
 
         return detected < 2
 
-    def is_connected (self, piece):
+    def is_connected(self, piece):
         for px, py in self.get_hooks(piece.x, piece.y):
             if self.get_piece(px, py):
                 if self.is_available_from(piece, px, py):
                     return True
         return False
 
-    def is_legal (self, x, y):
+    def is_legal(self, x, y):
         return (x, y) in self.get_available()
 
-    def switch_player (self):
-        if self.who.id == self.player1.id:
+    def switch_player(self):
+        if self.who == self.player1:
             self.who = self.player2
         else:
             self.who = self.player1
 
-    def player_int (self, player):
+    def player_int(self, player):
         if player.id == self.player1.id:
             return 1
         return -1

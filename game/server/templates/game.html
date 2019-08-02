@@ -4,13 +4,21 @@
 {% include 'head.html' %}
 
 <body>
-    {% include 'header.html' %}
+{% include 'header.html' %}
 
-    {% if game == None or user == None%}
-        <script>window.location = "/"</script>
-    {% else %}
-        {% include 'gameboard.html' %}
-    {% endif %}
+{% if game == None or user == None%}
+<script>window.location = "/"</script>
+{% else %}
+{% include 'gameboard.html' %}
+<script>
+    //variables from python
+    const gamenunmber = {{ game.id }}
+</script>
+{% endif %}
+
+<div id="bottombar">
+    <a class="button headerbutton" onclick="move()">Make move</a>
+</div>
 </body>
 </html>
 

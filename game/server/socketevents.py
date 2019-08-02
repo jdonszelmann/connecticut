@@ -1,29 +1,27 @@
-from flask_socketio import Namespace, emit, send
-from flask_jwt_extended import jwt_required
+from flask_socketio import Namespace, emit
+from flask_jwt_extended import jwt_required, jwt_optional
 from .util import *
-from flask import request
+from ..game import Game
 
-class SocketNamespace(Namespace):
 
-    sockets = {}
-    revsockets = {}
+class ConnecticutSockets(Namespace):
 
-    @jwt_required
+    @jwt_optional
     def on_connect(self):
         user = get_user()
-        self.__class__.sockets[user.id] = request.sid
-        self.__class__.revsockets[request.sid] = user.id
+        if user == None:
+            return emit("should_disconnect")
 
+    @jwt_optional
+    def on_move(self, data):
+        user = get_user()
+        if user == None:
+            return emit("should_disconnect")
 
-    def on_disconnect(self):
-        userid = self.__class__.revsockets[request.sid]
-        del self.__class__.sockets[userid]
-        del self.__class__.revsockets[request.sid]
+        game = Game.get_by_id(data["gameid"])
+        print(data)
+        # if user.in_game(game):
+        #
+        # else:
+        #     return
 
-    @classmethod
-    def send_to(cls, event, message, user):
-        emit(
-            'status',
-            message,
-            room=cls.sockets[user.id]
-        )

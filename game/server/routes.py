@@ -7,7 +7,7 @@ from flask_jwt_extended import jwt_optional, jwt_required
 from email.utils import parseaddr
 from ..game import Game
 from .util import *
-from .socketevents import SocketNamespace
+from .socketevents import ConnecticutSockets
 
 def routes(app):
     @app.route("/game")
@@ -25,14 +25,6 @@ def routes(app):
         else:
             existinggame.player2 = user
             existinggame.save()
-
-            SocketNamespace.send_to(
-                "other_player",
-                {
-                    "username": existinggame.player1.username
-                },
-                existinggame.player1
-            )
 
         gameid = existinggame.id
 
@@ -83,7 +75,6 @@ def routes(app):
         flask_jwt_extended.unset_refresh_cookies(response)
 
         return response
-
 
 
     @app.route("/register", methods=["POST"])
