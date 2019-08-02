@@ -5,8 +5,8 @@ from peewee import ForeignKeyField, IntegerField
 
 
 class Game(database.BaseModel):
-    player1 = ForeignKeyField(Player, backref="round", null=True)
-    player2 = ForeignKeyField(Player, backref="round", null=True)
+    player1 = ForeignKeyField(Player, backref="game", null=True)
+    player2 = ForeignKeyField(Player, backref="game", null=True)
     width = IntegerField()
     height = IntegerField()
 
