@@ -1,18 +1,22 @@
 from . import database
 from .player import Player
-from .board import Board
-from peewee import ForeignKeyField, AutoField
+from .config import Config
+from peewee import ForeignKeyField, IntegerField
 
 
 class Game(database.BaseModel):
-    identifier = AutoField(primary_key=True)
-    player1 = ForeignKeyField(Player, backref="game", null=True)
-    player2 = ForeignKeyField(Player, backref="game", null=True)
+    player1 = ForeignKeyField(Player, backref="round", null=True)
+    player2 = ForeignKeyField(Player, backref="round", null=True)
+    width = IntegerField()
+    height = IntegerField()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @classmethod
+    def create_default(cls, *args, **kwargs):
 
-        self.board = Board()
+        width = int(Config.get_config_option("defaultwidth"))
+        height = int(Config.get_config_option("defaultheight"))
+
+        return cls.create(*args, width=width, height=height, **kwargs)
 
     def start(self):
         pass

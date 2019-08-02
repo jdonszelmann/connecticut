@@ -1,0 +1,7 @@
+
+{% if user == None %}
+<a class="headerbutton" href="/login">Log in</a>
+<a class="headerbutton" href="/register">Register</a>
+{% else %}
+<a class="headerbutton" href="/logout">Log out</a>
+{% endif %}

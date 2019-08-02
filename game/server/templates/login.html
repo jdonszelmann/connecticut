@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+    {% include 'head.html' %}
+
+    <body>
+        {% include 'header.html' %}
+
+        <form id="login" class="form">
+
+                <p id="formstatus"></p>
+                <input id="email" class="formtextinput" type="text" placeholder="email"></input>
+                <input id="password" class="formtextinput" type="password" placeholder="password"></input>
+
+                <div class="formbuttonfield">
+                    <a href="/" class="submit">Back home</a>
+                    <a href="/register" class="submit">Register</a>
+                    <a onclick="login_submit();" class="submit">Login</a>
+                </div>
+        </form>
+
+    </body>
+
+</html>
