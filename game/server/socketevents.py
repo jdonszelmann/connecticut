@@ -1,7 +1,8 @@
 from flask_socketio import Namespace, emit
 from flask_jwt_extended import jwt_required, jwt_optional
 from .util import *
-from flask import request
+from ..game import Game
+
 
 class ConnecticutSockets(Namespace):
 
@@ -17,5 +18,9 @@ class ConnecticutSockets(Namespace):
         if user == None:
             return emit("should_disconnect")
 
-        if user.game.
-        print(data)
+        game = Game.get_by_id(data["gameid"])
+        if not user.in_game(game):
+            return
+
+
+

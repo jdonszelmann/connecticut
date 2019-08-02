@@ -1,6 +1,11 @@
 
 rgb = (r, g=r, b=g, a=1) => `rgba(${r}, ${g}, ${b}, ${a})`;
 print = console.log;
+circle = (ctx, x, y, radius) => {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+}
 
 let socket;
 let selected = undefined;
@@ -12,6 +17,7 @@ window.onload = () => {
     let canmove = false;
     const gridsizex = canvas.width / boardsize;
     const gridsizey = canvas.height / boardsize;
+    const circleradius = gridsizex / 3;
 
     const clear = () => {
         ctx.fillStyle = rgb(51);
@@ -20,13 +26,13 @@ window.onload = () => {
 
     const drawboard = () => {
         ctx.strokeStyle = rgb(255);
-        for (let i = 0; i < canvas.width; i += canvas.width/boardsize) {
+        for (let i = gridsizex/2; i < canvas.width; i += gridsizex) {
             ctx.beginPath();
             ctx.moveTo(0,i);
             ctx.lineTo(canvas.height,i);
             ctx.stroke()
         }
-        for (let i = 0; i < canvas.height; i += canvas.height/boardsize) {
+        for (let i = gridsizey/2; i < canvas.height; i += gridsizey){
             ctx.beginPath();
             ctx.moveTo(i,0);
             ctx.lineTo(i, canvas.width);
@@ -42,7 +48,8 @@ window.onload = () => {
             }else{
                 ctx.fillStyle = rgb(240,50,50, 0.6);
             }
-            ctx.fillRect(x, y, gridsizex, gridsizey);
+            circle(ctx,x+gridsizex/2, y+gridsizey/2, circleradius);
+            ctx.fill();
         }
     };
 
@@ -92,7 +99,8 @@ window.onload = () => {
         }else{
             ctx.fillStyle = rgb(240,50,50, 0.2);
         }
-        ctx.fillRect(x, y, gridsizex, gridsizey);
+        circle(ctx,x+gridsizex/2, y+gridsizey/2, circleradius);
+        ctx.fill();
     };
 
     window.onmousedown = (e) => {
@@ -108,7 +116,7 @@ window.onload = () => {
 
 
         if(newselected.x < canvas.width && newselected.y < canvas.height){
-            if(selected != undefined && (oldx == x || oldy == y)){
+            if(selected != undefined && oldx == x && oldy == y){
                 selected = undefined;
             }else{
                 selected = newselected;
@@ -132,6 +140,7 @@ const move = () => {
     socket.emit("move", {
         x: selected.x,
         y: selected.y,
+        game: gamenunmber,
     })
 };
 
