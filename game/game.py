@@ -18,7 +18,6 @@ class Game(database.BaseModel):
         height = int(Config.get_config_option("defaultheight"))
         name = Config.get_config_option("defaultname")
 
-        return cls.create(*args, width=width, height=height, **kwargs)
+        return cls.create(*args, width=width, height=height, name=name, **kwargs)
 
-    def start(self):
-        pass
+

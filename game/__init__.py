@@ -9,3 +9,8 @@ db = peewee.SqliteDatabase("connecticut.db")
 
 def init(db):
     database.open_connection(db)
+
+def start():
+    init(db)
+    #start the ui server
+    api = Server().run_in_thread()

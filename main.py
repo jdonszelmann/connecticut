@@ -22,11 +22,10 @@ def main(args = sys.argv[1:]):
             print("table not found")
             exit()
     else:
-        game.init(game.db)
+        game.start()
 
 
-        #start the ui server
-        api = game.Server().run_in_thread()
+
 
 if __name__ == "__main__":
     main()

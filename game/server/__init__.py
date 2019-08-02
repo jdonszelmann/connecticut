@@ -2,12 +2,13 @@ import threading
 from ..config import Config
 import os
 from flask_jwt_extended import JWTManager
+from jwt.exceptions import ExpiredSignatureError
 from .routes import *
 from flask import redirect
 import secrets
 import flask
 from flask_socketio import SocketIO, emit
-from .socketevents import SocketNamespace
+from .socketevents import ConnecticutSockets
 
 path = os.path.dirname(os.path.realpath(__file__))
 
@@ -60,7 +61,18 @@ class Server(flask.Flask):
         def handle_404(error):
             return flask.render_template("404.html"), 404
 
-        self.socketio.on_namespace(SocketNamespace('/websocket'))
+        @self.errorhandler(ExpiredSignatureError)
+        def handle_expired_signature(err):
+            response = redirect("/", code=302)
+            flask_jwt_extended.unset_access_cookies(response)
+            flask_jwt_extended.unset_refresh_cookies(response)
+            return response
+
+        @self.socketio.on_error('/websocket')
+        def error_handler(err):
+            print(f"A socket error occurred: {err}")
+
+        self.socketio.on_namespace(ConnecticutSockets('/websocket'))
         routes(self)
 
 
