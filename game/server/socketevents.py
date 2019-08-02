@@ -14,18 +14,16 @@ class SocketNamespace(Namespace):
         self.__class__.sockets[user.id] = request.sid
         self.__class__.revsockets[request.sid] = user.id
 
-    @jwt_required
-    def on_get_game(self, message):
-        pass
 
     def on_disconnect(self):
         userid = self.__class__.revsockets[request.sid]
         del self.__class__.sockets[userid]
         del self.__class__.revsockets[request.sid]
 
-    def send_to(self, event, message, user):
+    @classmethod
+    def send_to(cls, event, message, user):
         emit(
             'status',
             message,
-            room=self.__class__.sockets[user.id]
+            room=cls.sockets[user.id]
         )

@@ -53,37 +53,10 @@ body{
     padding: 5px;
 }
 
-.submit{
-    color: white;
-    background: var(--accent1-color);
-    padding: 10px;
-    margin: 8px;
-
-    border: 2px solid var(--accent2-color);
-    border-radius: 4px;
-    text-decoration: none;
-}
-
 .headerbutton{
     position: relative;
-
-    color: white;
-    background: var(--accent1-color);
-    padding: 10px;
-    margin: 8px;
-
-    border: 2px solid var(--accent2-color);
-    border-radius: 4px;
-    text-decoration: none;
-
     width: 60%;
 }
-
-.headerbutton:hover{
-    transition: all 0.2s ease;
-    background: var(--accent1-color-hover);
-}
-
 
 #formstatus{
     color: crimson;
@@ -95,11 +68,6 @@ body{
     justify-content: center;
     width: 100%;
     flex-direction: column;
-}
-
-.submit:hover{
-    transition: all 0.2s ease;
-    background: var(--accent1-color-hover);
 }
 
 .formbuttonfield{
@@ -121,4 +89,37 @@ body{
     height: 100%;
 }
 
+.playingbutton{
+    width: 60%
+}
 
+
+.playingentry{
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+
+    width: 60%;
+}
+
+.playingentry p{
+    padding-right: 5px;
+    padding-left: 5px;
+    border-left: 2px solid white;
+}
+
+.button{
+    color: white;
+    background: var(--accent1-color);
+    padding: 10px;
+    margin: 8px;
+
+    border: 2px solid var(--accent2-color);
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+.button:hover{
+    transition: all 0.2s ease;
+    background: var(--accent1-color-hover);
+}

@@ -13,12 +13,18 @@ window.onload = () => {
 
     const socket = io("/websocket");
     socket.on('connect', function(data) {
-        socket.emit('get_opponent');
+
+    });
+
+    socket.on('other_player', function(data) {
+        print(data)
     });
 
 
-
     clear();
+
+
+
 };
 
 

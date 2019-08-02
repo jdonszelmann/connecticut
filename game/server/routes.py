@@ -7,6 +7,7 @@ from flask_jwt_extended import jwt_optional, jwt_required
 from email.utils import parseaddr
 from ..game import Game
 from .util import *
+from .socketevents import SocketNamespace
 
 def routes(app):
     @app.route("/game")
@@ -16,10 +17,6 @@ def routes(app):
         if user == None:
             return redirect("/login", 302)
 
-        already_playing_game = user.game.get()
-        if already_playing_game:
-            return redirect(f"/game/{already_playing_game.id}", 302)
-
         existinggame = Game.get_or_none(Game.player2.is_null())
         if existinggame == None:
             existinggame = Game.create_default(
@@ -28,6 +25,15 @@ def routes(app):
         else:
             existinggame.player2 = user
             existinggame.save()
+
+            SocketNamespace.send_to(
+                "other_player",
+                {
+                    "username": existinggame.player1.username
+                },
+                existinggame.player1
+            )
+
         gameid = existinggame.id
 
         return redirect(f"/game/{gameid}", 302)
@@ -47,6 +53,7 @@ def routes(app):
     @app.route("/")
     @jwt_optional
     def index():
+        user = get_user()
         return render_template("index.html", user=get_user()), 200
 
     @app.route("/login", methods=["GET"])

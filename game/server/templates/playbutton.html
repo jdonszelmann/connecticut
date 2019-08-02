@@ -1,0 +1,21 @@
+<a class="playingentry button" href="/game/{{game.id}}">
+    <p>id: {{game.id}}</p>
+    <p>name: {{game.name}}</p>
+    {% if game.player2 == None %}
+        {% if game.player1.id == user.id %}
+            <p>Admin</p>
+            <p>No opponent</p>
+        {% else %}
+            <p>No opponent</p>
+        {% endif %}
+    {% else %}
+        {% if game.player1.id == user.id %}
+            <p>Admin</p>
+            <p>{{game.player2.username}}</p>
+        {% else %}
+            <p>{{game.player1.username}}</p>
+        {% endif %}
+    {% endif %}
+
+    <p></p> <!-- to create last separator line -->
+</a>

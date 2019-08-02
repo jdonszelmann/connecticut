@@ -1,8 +1,8 @@
 from . import database
 from .player import Player
 from .config import Config
-from peewee import ForeignKeyField, IntegerField
 import peewee
+from peewee import ForeignKeyField, IntegerField, CharField
 
 MARKERS = (
   # unavailable point 0
@@ -16,10 +16,11 @@ MARKERS = (
 )
 
 class Game(database.BaseModel):
-    player1 = ForeignKeyField(Player, backref="game", null=True)
-    player2 = ForeignKeyField(Player, backref="game", null=True)
+    player1 = ForeignKeyField(Player, backref="games1", null=True)
+    player2 = ForeignKeyField(Player, backref="games2", null=True)
     width = IntegerField()
     height = IntegerField()
+    name = CharField()
     who = ForeignKeyField(Player, backref='active_games', null=False)
 
     def __init__(self, *args, **kwargs):
@@ -31,6 +32,7 @@ class Game(database.BaseModel):
         width = int(Config.get_config_option("defaultwidth"))
         height = int(Config.get_config_option("defaultheight"))
         who = kwargs['player1']
+        name = Config.get_config_option("defaultname")
 
         return cls.create(*args, width=width, height=height, who=who, **kwargs)
 
