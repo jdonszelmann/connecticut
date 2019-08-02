@@ -3,7 +3,6 @@ from .player import Player
 from .database import BaseModel
 from .game import Game
 
-
 class Piece(BaseModel):
     x = peewee.IntegerField()
     y = peewee.IntegerField()
