@@ -8,15 +8,11 @@ MARKERS = (
   # unavailable point 0
   "┼",
   # green piece 1
-  "\033[1;32mO\033[0m",
-  # # point available to green piece 2
-  "\033[0;36m┼\033[0m",
-  # # point avaibable to both 3/-3
-  "\033[1;33m┼\033[0m",
-  # # point available to red piece -2
-  "\033[0;35m┼\033[0m",
+  "O",
+  # "\033[1;32mO\033[0m",
   # red piece -1
-  "\033[1;31mO\033[0m"
+  "X",
+  # "\033[1;31mO\033[0m"
 )
 
 class Game(database.BaseModel):
@@ -41,14 +37,23 @@ class Game(database.BaseModel):
     def start(self):
         pass
 
-    def __repr__ (self):
+    def __str__ (self):
         if self.width > 26:
           raise ValueError("Width of Field cannot exede 26.")
 
         if self.height > 99:
           raise ValueError("Height of Field cannot exede 99.")
 
-        a = ['──'.join([MARKERS[self[x, y]] for x in range(self.width)]) for y in range(self.height)]
+        def piece_to_int (piece):
+            if piece == 0:
+                return 0
+            else:
+                return self.player_int(piece.player)
+
+        a = ['──'.join([MARKERS[piece_to_int(self.get_piece(x, y))]
+                for x in range(self.width)])
+                    for y in range(self.height)]
+
         b = ("\n   │%s\n" % ("  │" * (self.width - 1))).join([str(self.height - i).rjust(2) + ' ' + a[i] for i in range(len(a))])
         c = b + "\n   " + "  ".join("ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.width])
         return c
@@ -84,8 +89,8 @@ class Game(database.BaseModel):
                 Piece.x <= min(self.width - 2, x + 3) and \
                 Piece.y >= max(1, y - 2) and \
                 Piece.y <= min(self.height - 2, y + 3) and \
-                Piece.player != self.who
-            ).get()
+                Piece.player.id != self.who.id
+            )
 
             checked = []
             for piece in in_range:
@@ -164,8 +169,8 @@ class Game(database.BaseModel):
                             available.add((x, y))
 
     def is_available_from (self, piece, hx, hy):
-        mx = 1 if x2>x1 else -1
-        my = 1 if y2>y1 else -1
+        mx = 1 if hx>piece.x else -1
+        my = 1 if hy>piece.y else -1
 
         detected = 0
 
@@ -174,7 +179,7 @@ class Game(database.BaseModel):
                 for y in range(1 - x, 3 - x):
                     px, py = piece.x + x * mx, piece.y + y * my
 
-                    if self.get_piece(px, py).player == -piece.player:
+                    if self.player_int(self.get_piece(px, py).player) == -self.player_int(piece.player):
                         detected += 1
                         break
         else:
@@ -182,14 +187,14 @@ class Game(database.BaseModel):
                 for x in range(1 - y, 3 - y):
                     px, py = piece.x + x * mx, piece.y + y * my
 
-                    if self.get_piece(px, py).player == -piece.player:
+                    if self.player_int(self.get_piece(px, py).player) == -self.player_int(piece.player):
                         detected += 1
                         break
 
         return detected < 2
 
     def is_connected (self, piece):
-        for px, py in self.get_hooks(piece):
+        for px, py in self.get_hooks(piece.x, piece.y):
             if self.get_piece(px, py):
                 if self.is_available_from(piece, px, py):
                     return True
@@ -199,7 +204,12 @@ class Game(database.BaseModel):
         return (x, y) in self.get_available()
 
     def switch_player (self):
-        if self.who == self.player1:
+        if self.who.id == self.player1.id:
             self.who = self.player2
         else:
             self.who = self.player1
+
+    def player_int (self, player):
+        if player.id == self.player1.id:
+            return 1
+        return -1
