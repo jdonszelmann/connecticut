@@ -15,7 +15,7 @@ class SocketNamespace(Namespace):
         self.__class__.revsockets[request.sid] = user.id
 
     @jwt_required
-    def on_get_opponent(self, message):
+    def on_get_game(self, message):
         pass
 
     def on_disconnect(self):
