@@ -106,8 +106,29 @@ class Game(database.BaseModel):
         retid = int(Piece.create(x=x, y=y, player=self.who, game=self).id)
 
         try:
+            # in_range = (
+            #     Piece
+            #     .select()
+            #     .join(Player, on=(Piece.player == Player.id))
+            #     .where(
+            #         ((Piece.x, Piece.y) in (
+            #                               (x, y-2),
+            #                   (x-1, y-1), (x, y-1), (x+1, y-1),
+            #           (x-2, y), (x-1, y),           (x+1, y), (x+2, y),
+            #                   (x-1, y+1), (x, y+1), (x+1, y+1),
+            #                               (x, y+2),
+            #
+            #           #                     (x, y-2),
+            #           #         (x-1, y-1), (x, y-1), (x+1, y-1),
+            #           # (x-2, y), (x-1, y),           (x+1, y), (x+2, y),
+            #           #         (x-1, y+1), (x, y+1), (x+1, y+1),
+            #           #                     (x, y+2),
+            #         )) & (Player.id != self.who)
+            #     )
+            # )
+
             in_range = (
-                Piece
+                    Piece
                     .select()
                     .join(Player, on=(Piece.player == Player.id))
                     .where(
@@ -115,7 +136,7 @@ class Game(database.BaseModel):
                     (Piece.x <= min(self.width - 2, x + 3)) &
                     (Piece.y >= max(1, y - 2)) &
                     (Piece.y <= min(self.height - 2, y + 3)) &
-                    (Player.id == self.who)
+                    (Player.id != self.who)
                 )
             )
 
@@ -148,7 +169,10 @@ class Game(database.BaseModel):
         from .piece import Piece
         Piece.delete().where((Piece.x == x) & (Piece.y == y)).execute()
 
-    def floodfill(self, piece, pool=list()):
+    def floodfill(self, piece, pool=None):
+        if pool == None:
+            pool = []
+            
         pool.append(piece)
         for px, py in self.get_hooks(piece.x, piece.y):
             hookpiece = self.get_piece(px, py)
