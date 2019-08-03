@@ -11,7 +11,8 @@ def open_connection(db, drop=False):
 
 
     if drop:
-        db.drop_tables(BaseModel.__subclasses__())
+        for i in BaseModel.__subclasses__():
+            i.drop_table()
 
     try:
         db.connect()

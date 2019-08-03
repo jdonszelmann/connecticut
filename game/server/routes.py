@@ -36,7 +36,7 @@ def routes(app):
         user = get_user()
         if user == None:
             return redirect("/login", 302)
-        game = Game.get(Game.id == game_id)
+        game = Game.get_by_id(game_id)
         if user != game.player1 and user != game.player2:
             return redirect("/", 302)
 

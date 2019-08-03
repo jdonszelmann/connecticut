@@ -1,3 +1,4 @@
+# coding=utf-8
 from . import database
 from .player import Player
 from .config import Config
@@ -26,8 +27,6 @@ class Game(database.BaseModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from .piece import Piece
-        self.Piece = Piece
 
     @classmethod
     def create_default(cls, *args, **kwargs):
@@ -44,18 +43,13 @@ class Game(database.BaseModel):
 
     def __str__(self):
         if self.width > 26:
-            raise ValueError("Width of Field cannot exede 26.")
+            raise ValueError("Width of Field cannot exceed 26.")
 
         if self.height > 99:
-            raise ValueError("Height of Field cannot exede 99.")
+            raise ValueError("Height of Field cannot exceed 99.")
 
-        def piece_to_int(piece):
-            if piece == 0:
-                return 0
-            else:
-                return self.player_int(piece.player)
 
-        a = ['──'.join([MARKERS[piece_to_int(self.get_piece(x, y))]
+        a = ['──'.join([MARKERS[self.piece_player_int(self.get_piece(x, y))]
                         for x in range(self.width)])
              for y in range(self.height)]
 
@@ -74,53 +68,54 @@ class Game(database.BaseModel):
         return False
 
     def get_piece(self, x, y):
+        from .piece import Piece
+
         try:
-            return self.Piece.select().where(
-                self.Piece.x == x and self.Piece.y == y \
-                and self.Piece.game == self
-            ).get()
+
+            return (
+                Piece.select()
+                .join(
+                    Game,
+                    on=(Piece.game == Game.id)
+                ).where(
+                    (Piece.x == x) &
+                    (Piece.y == y) &
+                    (Game.id == self.id)
+                ).get()
+            )
         except peewee.DoesNotExist:
-            return 0
+            return None
+
+    def get_all_pieces(self):
+        from .piece import Piece
+
+        try:
+            return (i for i in Piece.select().where(
+                Piece.game == self
+            ))
+        except peewee.DoesNotExist:
+            return []
 
     def set_piece(self, x, y):
+        from .piece import Piece
+
+
         self.remove_piece(x, y)
-        self.Piece.create(x=x, y=y, player=self.who, game=self)
+        retpiece = Piece.create(x=x, y=y, player=self.who, game=self)
 
         try:
             in_range = (
-                self.Piece
+                Piece
                     .select()
-                    .join(Player, on=(self.Piece.player == Player.id))
+                    .join(Player, on=(Piece.player == Player.id))
                     .where(
-                    self.Piece.x >= max(1, x - 2) and
-                    self.Piece.x <= min(self.width - 2, x + 3) and
-                    self.Piece.y >= max(1, y - 2) and
-                    self.Piece.y <= min(self.height - 2, y + 3) and
-                    Player.id == self.who
+                    (Piece.x >= max(1, x - 2)) &
+                    (Piece.x <= min(self.width - 2, x + 3)) &
+                    (Piece.y >= max(1, y - 2)) &
+                    (Piece.y <= min(self.height - 2, y + 3)) &
+                    (Player.id == self.who)
                 )
             )
-            #
-            # in_range = (
-            #     self.Piece
-            #     .select()
-            #     .join(Player, on=(self.Piece.player == Player.id))
-            #     .where(
-            #         (self.Piece.x, self.Piece.y) in (
-            #                               (x, y-2),
-            #                   (x-1, y-1), (x, y-1), (x+1, y-1),
-            #           (x-2, y), (x-1, y),           (x+1, y), (x+2, y),
-            #                   (x-1, y+1), (x, y+1), (x+1, y+1),
-            #                               (x, y+2),
-            #
-            #           #                     (x, y-2),
-            #           #         (x-1, y-1), (x, y-1), (x+1, y-1),
-            #           # (x-2, y), (x-1, y),           (x+1, y), (x+2, y),
-            #           #         (x-1, y+1), (x, y+1), (x+1, y+1),
-            #           #                     (x, y+2),
-            #         ) and
-            #  Player       Player.id == self.who
-            #     )
-            # )
 
 
             checked = []
@@ -143,8 +138,11 @@ class Game(database.BaseModel):
         except peewee.DoesNotExist:
             pass
 
+        return retpiece
+
     def remove_piece(self, x, y):
-        self.Piece.delete().where(self.Piece.x == x and self.Piece.y == y).execute()
+        from .piece import Piece
+        Piece.delete().where((Piece.x == x) & (Piece.y == y)).execute()
 
     def floodfill(self, piece, pool=list()):
         pool.append(piece)
@@ -168,17 +166,19 @@ class Game(database.BaseModel):
                 vx, vy = vy, -vx
 
     def get_available(self):
+        from .piece import Piece
+
         available = set()
 
-        pieces = self.Piece.select(self.Piece.x, self.Piece.y).where(
-            self.Piece.player == self.who and \
-            self.Piece.game == self
+        pieces = Piece.select(Piece.x, Piece.y).where(
+            (Piece.player == self.who) & \
+            (Piece.game == self)
         )
 
         for piece in pieces:
             for px, py in self.get_hooks(piece.x, piece.y):
                 if (px, py) not in available:
-                    if self.get_piece(px, py) == 0:
+                    if self.get_piece(px, py) == None:
                         if self.is_available_from(piece, px, py):
                             yield px, py
                             available.add((px, py))
@@ -186,14 +186,14 @@ class Game(database.BaseModel):
             for y in (0, self.height - 1):
                 for x in range(self.width):
                     if (x, y) not in available:
-                        if self.get_piece(x, y) == 0:
+                        if self.get_piece(x, y) is None:
                             yield x, y
                             available.add((x, y))
 
             for x in (0, self.width - 1):
                 for y in range(1, self.height - 1):
                     if (x, y) not in available:
-                        if self.get_piece(x, y) == 0:
+                        if self.get_piece(x, y) is None:
                             yield x, y
                             available.add((x, y))
 
@@ -208,7 +208,7 @@ class Game(database.BaseModel):
                 for y in range(1 - x, 3 - x):
                     px, py = piece.x + x * mx, piece.y + y * my
 
-                    if self.player_int(self.get_piece(px, py).player) == -self.player_int(piece.player):
+                    if self.piece_player_int(self.get_piece(px, py)) == -self.player_int(piece.player):
                         detected += 1
                         break
         else:
@@ -216,7 +216,7 @@ class Game(database.BaseModel):
                 for x in range(1 - y, 3 - y):
                     px, py = piece.x + x * mx, piece.y + y * my
 
-                    if self.player_int(self.get_piece(px, py).player) == -self.player_int(piece.player):
+                    if self.piece_player_int(self.get_piece(px, py)) == -self.player_int(piece.player):
                         detected += 1
                         break
 
@@ -242,3 +242,9 @@ class Game(database.BaseModel):
         if player.id == self.player1.id:
             return 1
         return -1
+
+    def piece_player_int (self, piece):
+        if piece:
+            return self.player_int(piece.player)
+        else:
+            return 0
