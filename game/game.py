@@ -51,11 +51,11 @@ class Game(database.BaseModel):
 
         a = ['──'.join([MARKERS[self.piece_player_int(self.get_piece(x, y))]
                         for x in range(self.width)])
-             for y in range(self.height)]
+             for y in range(self.height - 1, -1, -1)]
 
         b = ("\n   │%s\n" % ("  │" * (self.width - 1))).join(
-            [str(self.height - i).rjust(2) + ' ' + a[i] for i in range(len(a))])
-        c = b + "\n   " + "  ".join("ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:self.width])
+            [str(self.height - i - 1).rjust(2) + ' ' + a[i] for i in range(len(a))])
+        c = b + "\n " + "".join((str(i).rjust(3) for i in range(self.width)))
         return c
 
     def place_piece(self, x, y):
@@ -98,10 +98,12 @@ class Game(database.BaseModel):
 
     def set_piece(self, x, y):
         from .piece import Piece
-
+        if not (x >= 0 and y >= 0 and x < self.width and y < self.height):
+            return None
 
         self.remove_piece(x, y)
-        retpiece = Piece.create(x=x, y=y, player=self.who, game=self)
+        # get the id of the created piece to later check if it still exists
+        retid = int(Piece.create(x=x, y=y, player=self.who, game=self).id)
 
         try:
             in_range = (
@@ -138,7 +140,9 @@ class Game(database.BaseModel):
         except peewee.DoesNotExist:
             pass
 
-        return retpiece
+        # get the created piece from the database. If it doesnt exist anymore, return None
+        return Piece.get_or_none(Piece.id == retid)
+
 
     def remove_piece(self, x, y):
         from .piece import Piece
