@@ -135,15 +135,42 @@ class Game(database.BaseModel):
                 #     )
                 # )
 
+                # in_range = (
+                #     Piece
+                #         .select()
+                #         .join(Player, on=(Piece.player == Player.id))
+                #         .where(
+                #         (Piece.x >= max(1, x - 2)) &
+                #         (Piece.x <= min(self.width - 2, x + 3)) &
+                #         (Piece.y >= max(1, y - 2)) &
+                #         (Piece.y <= min(self.height - 2, y + 3)) &
+                #         (Player.id != self.who) &
+                #         (Piece.game == self.id)
+                #     )
+                # )
+
+                def in_rombus (piece, x, y):
+                    return (
+                        ((piece.x == x  ) & (piece.y == y-2)) |
+                        ((piece.x == x-1) & (piece.y == y-1)) |
+                        ((piece.x == x  ) & (piece.y == y-1)) |
+                        ((piece.x == x+1) & (piece.y == y-1)) |
+                        ((piece.x == x-2) & (piece.y == y  )) |
+                        ((piece.x == x-1) & (piece.y == y  )) |
+                        ((piece.x == x+1) & (piece.y == y  )) |
+                        ((piece.x == x+2) & (piece.y == y  )) |
+                        ((piece.x == x-1) & (piece.y == y+1)) |
+                        ((piece.x == x  ) & (piece.y == y+1)) |
+                        ((piece.x == x+1) & (piece.y == y+1)) |
+                        ((piece.x == x  ) & (piece.y == y+2))
+                    )
+
                 in_range = (
                     Piece
                         .select()
                         .join(Player, on=(Piece.player == Player.id))
                         .where(
-                        (Piece.x >= max(1, x - 2)) &
-                        (Piece.x <= min(self.width - 2, x + 3)) &
-                        (Piece.y >= max(1, y - 2)) &
-                        (Piece.y <= min(self.height - 2, y + 3)) &
+                        in_rombus(Piece, x, y) &
                         (Player.id != self.who) &
                         (Piece.game == self.id)
                     )

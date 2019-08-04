@@ -130,7 +130,7 @@ class TestEngine(DatabaseTestCase):
         self.assertIsNone(g.set_piece(100, 0))
         self.assertIsNone(g.set_piece(0, 100))
         self.assertIsNone(g.set_piece(100, 100))
-        self.assertIsNone(g.s2et_piece(-1, 100))
+        self.assertIsNone(g.set_piece(-1, 100))
 
         self.assertIsNotNone(g.set_piece(1, 0))
 
