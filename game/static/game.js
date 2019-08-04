@@ -57,6 +57,9 @@ window.onload = () => {
         socket = io("/websocket");
         socket.on('connect', function(data) {
             print("socket online")
+            socket.emit("startup", data={
+                gameid: gamenunmber
+            })
         });
 
         socket.on('move', function(data) {
@@ -70,6 +73,16 @@ window.onload = () => {
 
         socket.on('move_approved', function(data) {
             alert("Move made. wait for your opponent to make one.")
+            selected = undefined;
+        });
+
+        socket.on('invalid_packet', function(data) {
+            alert("You sent an invalid packet. Don't cheat!");
+            selected = undefined;
+        });
+
+        socket.on('invalid_move', function(data) {
+            alert("You can't make that move!");
             selected = undefined;
         });
     };

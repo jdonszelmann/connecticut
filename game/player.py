@@ -7,5 +7,7 @@ class Player(database.BaseModel):
     username = CharField(null=False)
     password_hash = CharField(null=False)
 
+    def in_game(self, game):
+        return game.id in (i.id for i in zip(self.games1, self.games2))
 
 

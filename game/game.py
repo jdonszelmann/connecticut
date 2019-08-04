@@ -60,18 +60,17 @@ class Game(database.BaseModel):
 
     def place_piece(self, x, y):
         if self.is_legal(x, y):
-            self.set_piece(x, y)
+            piece = self.set_piece(x, y)
             self.switch_player()
 
             self.save()
-            return True
-        return False
+            return piece
+        return None
 
     def get_piece(self, x, y):
         from .piece import Piece
 
         try:
-
             return (
                 Piece.select()
                 .join(
@@ -88,7 +87,6 @@ class Game(database.BaseModel):
 
     def get_all_pieces(self):
         from .piece import Piece
-
         try:
             return (i for i in Piece.select().where(
                 Piece.game == self
@@ -98,71 +96,82 @@ class Game(database.BaseModel):
 
     def set_piece(self, x, y):
         from .piece import Piece
-        if not (x >= 0 and y >= 0 and x < self.width and y < self.height):
-            return None
 
-        self.remove_piece(x, y)
-        # get the id of the created piece to later check if it still exists
-        retid = int(Piece.create(x=x, y=y, player=self.who, game=self).id)
+        with self.__class__._meta.database.atomic():
+            if not (x >= 0 and y >= 0 and x < self.width and y < self.height):
+                return None
 
-        try:
-            # in_range = (
-            #     Piece
-            #     .select()
-            #     .join(Player, on=(Piece.player == Player.id))
-            #     .where(
-            #         ((Piece.x, Piece.y) in (
-            #                               (x, y-2),
-            #                   (x-1, y-1), (x, y-1), (x+1, y-1),
-            #           (x-2, y), (x-1, y),           (x+1, y), (x+2, y),
-            #                   (x-1, y+1), (x, y+1), (x+1, y+1),
-            #                               (x, y+2),
-            #
-            #           #                     (x, y-2),
-            #           #         (x-1, y-1), (x, y-1), (x+1, y-1),
-            #           # (x-2, y), (x-1, y),           (x+1, y), (x+2, y),
-            #           #         (x-1, y+1), (x, y+1), (x+1, y+1),
-            #           #                     (x, y+2),
-            #         )) & (Player.id != self.who)
-            #     )
-            # )
+            self.remove_piece(x, y)
+            # get the id of the created piece to later check if it still exists
+            retid = int(Piece.create(x=x, y=y, player=self.who, game=self).id)
 
-            in_range = (
+            try:
+                # in_range = (
+                #     Piece
+                #     .select()
+                #     .join(Player, on=(Piece.player == Player.id))
+                #     .where(
+                #         (
+                #             ((Piece.x == x  ) & (Piece.y == y-2)) |
+                #             ((Piece.x == x-1) & (Piece.y == y-1)) |
+                #             ((Piece.x == x  ) & (Piece.y == y-1)) |
+                #             ((Piece.x == x+1) & (Piece.y == y-1)) |
+                #             ((Piece.x == x-2) & (Piece.y == y  )) |
+                #             ((Piece.x == x-1) & (Piece.y == y  )) |
+                #             ((Piece.x == x+1) & (Piece.y == y  )) |
+                #             ((Piece.x == x+2) & (Piece.y == y  )) |
+                #             ((Piece.x == x-1) & (Piece.y == y+1)) |
+                #             ((Piece.x == x  ) & (Piece.y == y+1)) |
+                #             ((Piece.x == x+1) & (Piece.y == y+1)) |
+                #             ((Piece.x == x  ) & (Piece.y == y+2))
+                #
+                #           #                     (x, y-2),
+                #           #         (x-1, y-1), (x, y-1), (x+1, y-1),
+                #           # (x-2, y), (x-1, y),           (x+1, y), (x+2, y),
+                #           #         (x-1, y+1), (x, y+1), (x+1, y+1),
+                #           #                     (x, y+2),
+                #
+                #         ) & (Player.id != self.who)
+                #     )
+                # )
+
+                in_range = (
                     Piece
-                    .select()
-                    .join(Player, on=(Piece.player == Player.id))
-                    .where(
-                    (Piece.x >= max(1, x - 2)) &
-                    (Piece.x <= min(self.width - 2, x + 3)) &
-                    (Piece.y >= max(1, y - 2)) &
-                    (Piece.y <= min(self.height - 2, y + 3)) &
-                    (Player.id != self.who)
+                        .select()
+                        .join(Player, on=(Piece.player == Player.id))
+                        .where(
+                        (Piece.x >= max(1, x - 2)) &
+                        (Piece.x <= min(self.width - 2, x + 3)) &
+                        (Piece.y >= max(1, y - 2)) &
+                        (Piece.y <= min(self.height - 2, y + 3)) &
+                        (Player.id != self.who) &
+                        (Piece.game == self.id)
+                    )
                 )
-            )
 
 
-            checked = []
-            for piece in in_range:
-                if not self.is_connected(piece):
-                    piece.delete_instance()
+                checked = []
+                for piece in in_range:
+                    if not self.is_connected(piece):
+                        piece.delete_instance()
 
-                elif piece not in checked:
-                    pool = self.floodfill(piece)
-                    checked += pool
+                    elif piece not in checked:
+                        pool = self.floodfill(piece)
+                        checked += pool
 
-                    if not any((
-                            p.x == 0 or p.x == self.width - 1 \
-                            or p.y == 0 or p.y == self.height - 1 \
-                            for p in pool)):
-                        for p in pool:
-                            p.delete_instance()
+                        if not any((
+                                p.x == 0 or p.x == self.width - 1 \
+                                or p.y == 0 or p.y == self.height - 1 \
+                                for p in pool)):
+                            for p in pool:
+                                p.delete_instance()
 
-            self.save()
-        except peewee.DoesNotExist:
-            pass
+                self.save()
+            except peewee.DoesNotExist:
+                pass
 
-        # get the created piece from the database. If it doesnt exist anymore, return None
-        return Piece.get_or_none(Piece.id == retid)
+            # get the created piece from the database. If it doesnt exist anymore, return None
+            return Piece.get_or_none(Piece.id == retid)
 
 
     def remove_piece(self, x, y):
@@ -170,9 +179,11 @@ class Game(database.BaseModel):
         Piece.delete().where((Piece.x == x) & (Piece.y == y)).execute()
 
     def floodfill(self, piece, pool=None):
+        from .piece import Piece
         if pool == None:
             pool = []
-            
+
+
         pool.append(piece)
         for px, py in self.get_hooks(piece.x, piece.y):
             hookpiece = self.get_piece(px, py)
@@ -203,27 +214,29 @@ class Game(database.BaseModel):
             (Piece.game == self)
         )
 
+        allpieces = [(p.x, p.y) for p in self.get_all_pieces()]
+
         for piece in pieces:
             for px, py in self.get_hooks(piece.x, piece.y):
                 if (px, py) not in available:
-                    if self.get_piece(px, py) == None:
+                    if (px, py) not in allpieces:
                         if self.is_available_from(piece, px, py):
                             yield px, py
                             available.add((px, py))
 
-            for y in (0, self.height - 1):
-                for x in range(self.width):
-                    if (x, y) not in available:
-                        if self.get_piece(x, y) is None:
-                            yield x, y
-                            available.add((x, y))
+        for y in (0, self.height - 1):
+            for x in range(self.width):
+                if (x, y) not in available:
+                    if (x, y) not in allpieces:
+                        yield x, y
+                        available.add((x, y))
 
-            for x in (0, self.width - 1):
-                for y in range(1, self.height - 1):
-                    if (x, y) not in available:
-                        if self.get_piece(x, y) is None:
-                            yield x, y
-                            available.add((x, y))
+        for x in (0, self.width - 1):
+            for y in range(1, self.height - 1):
+                if (x, y) not in available:
+                    if (x, y) not in allpieces:
+                        yield x, y
+                        available.add((x, y))
 
     def is_available_from(self, piece, hx, hy):
         mx = 1 if hx > piece.x else -1
@@ -271,8 +284,14 @@ class Game(database.BaseModel):
             return 1
         return -1
 
-    def piece_player_int (self, piece):
+    def piece_player_int(self, piece):
         if piece:
             return self.player_int(piece.player)
         else:
             return 0
+
+    def other_player(self, player):
+        if player.id == self.player1.id:
+            return self.player2
+        else:
+            return self.player1

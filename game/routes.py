@@ -5,7 +5,7 @@ from flask_bcrypt import generate_password_hash, check_password_hash
 import flask_jwt_extended
 from flask_jwt_extended import jwt_optional, jwt_required
 from email.utils import parseaddr
-from ..game import Game
+from game.game import Game
 from .util import *
 from .socketevents import ConnecticutSockets
 

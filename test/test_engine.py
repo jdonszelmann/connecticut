@@ -130,12 +130,52 @@ class TestEngine(DatabaseTestCase):
         self.assertIsNone(g.set_piece(100, 0))
         self.assertIsNone(g.set_piece(0, 100))
         self.assertIsNone(g.set_piece(100, 100))
-        self.assertIsNone(g.set_piece(-1, 100))
+        self.assertIsNone(g.s2et_piece(-1, 100))
 
         self.assertIsNotNone(g.set_piece(1, 0))
 
+
+    def test_place_out_of_bounds(self):
+        player1 = game.Player.create(**player1args)
+        player2 = game.Player.create(**player2args)
+
+        g = game.Game.create(
+            player1=player1,
+            player2=player2,
+            width=13,
+            height=13,
+            who=player1,
+            name="no name"
+        )
+
+        self.assertIsNone(g.place_piece(-1, 0))
+        self.assertIsNone(g.place_piece(0, -1))
+        self.assertIsNone(g.place_piece(-1, -1))
+        self.assertIsNone(g.place_piece(100, 0))
+        self.assertIsNone(g.place_piece(0, 100))
+        self.assertIsNone(g.place_piece(100, 100))
+        self.assertIsNone(g.place_piece(-1, 100))
+
+        self.assertIsNotNone(g.place_piece(1, 0))
+
         # in the center of the board, so shouldn't be placed
-        self.assertIsNone(g.set_piece(10, 10))
+        self.assertIsNone(g.place_piece(10, 10))
+
+    def test_legal(self):
+        player1 = game.Player.create(**player1args)
+        player2 = game.Player.create(**player2args)
+
+        g = game.Game.create(
+            player1=player1,
+            player2=player2,
+            width=13,
+            height=13,
+            who=player1,
+            name="no name"
+        )
+
+        self.assertEqual(list(g.get_available()),
+                         [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0), (0, 12), (1, 12), (2, 12), (3, 12), (4, 12), (5, 12), (6, 12), (7, 12), (8, 12), (9, 12), (10, 12), (11, 12), (12, 12), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8), (0, 9), (0, 10), (0, 11), (12, 1), (12, 2), (12, 3), (12, 4), (12, 5), (12, 6), (12, 7), (12, 8), (12, 9), (12, 10), (12, 11)])
 
     def test_cascade_remove_pieces(self):
         player1 = game.Player.create(**player1args)
@@ -162,7 +202,6 @@ class TestEngine(DatabaseTestCase):
         g.switch_player()
         g.set_piece(1, 2)
 
-        print(g)
 
         self.assertIsNone(Piece.get_or_none(Piece.id == id_should_be_removed))
 

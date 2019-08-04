@@ -1,14 +1,14 @@
 import threading
-from ..config import Config
+from .config import Config
 import os
 from flask_jwt_extended import JWTManager
 from jwt.exceptions import ExpiredSignatureError
-from .routes import *
+from game.routes import *
 from flask import redirect
 import secrets
 import flask
-from flask_socketio import SocketIO, emit
-from .socketevents import ConnecticutSockets
+from flask_socketio import SocketIO
+from game.socketevents import ConnecticutSockets
 
 path = os.path.dirname(os.path.realpath(__file__))
 
