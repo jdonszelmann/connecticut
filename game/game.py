@@ -59,14 +59,35 @@ class Game(database.BaseModel):
         return c
 
     def place_piece(self, x, y):
-        l = self.is_legal(x, y)
-        if l:
+        legal = self.is_legal(x, y)
+        if legal:
             piece = self.set_piece(x, y)
-            self.switch_player()
 
+            victor = None
+            left, right, up, down = False, False, False, False
+
+            if piece:
+                for knot in self.flood_bridge(piece, []):
+                    if x == 0:
+                        left = True
+                    elif x == self.width - 1:
+                        right = True
+
+                    if y == 0:
+                        down = True
+                    elif y == self.height - 1:
+                        up = True
+
+                    if (left and right) or (up and down):
+                        victor = self.who
+                        break
+
+            self.switch_player()
             self.save()
-            return piece
-        return None
+
+            return piece, victor
+
+        return None, None
 
     def get_piece(self, x, y):
         from .piece import Piece
@@ -128,7 +149,7 @@ class Game(database.BaseModel):
                         piece.delete_instance()
 
                     elif piece not in checked:
-                        pool = self.floodfill(piece, [])
+                        pool = self.flood_island(piece, [])
                         checked += pool
 
                         if not any((
@@ -150,9 +171,7 @@ class Game(database.BaseModel):
         from .piece import Piece
         Piece.delete().where((Piece.x == x) & (Piece.y == y)).execute()
 
-    def floodfill(self, piece, pool):
-        from .piece import Piece
-
+    def flood_island(self, piece, pool):
         pool.append(piece)
         for px, py in self.get_hooks(piece.x, piece.y):
             hookpiece = self.get_piece(px, py)
@@ -160,8 +179,29 @@ class Game(database.BaseModel):
                 if piece.player == hookpiece.player:
                     if hookpiece not in pool:
                         if self.is_available_from(piece, px, py):
-                            pool = self.floodfill(hookpiece, pool)
+                            pool = self.flood_island(hookpiece, pool)
         return pool
+
+    def flood_bridge(self, piece, pool):
+        pool.append(piece)
+        x, y = piece.x, piece.y
+        yield x, y
+
+        for px, py in (
+            (x-1, y-1), (x  , y-1), (x+1, y-1),
+            (x-1, y  ),             (x+1, y  ),
+            (x-1, y+1), (x  , y+1), (x+1, y+1)
+        ):
+            neighbor = self.get_piece(px, py)
+            if neighbor:
+                if piece.player == neighbor.player:
+                    if neighbor not in pool:
+                        for nx, ny in self.flood_bridge(neighbor, pool):
+                            yield nx, ny
+
+        return pool
+
+
 
     def get_hooks(self, x, y):
         for m in (-1, 1):

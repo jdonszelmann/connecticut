@@ -53,7 +53,7 @@ class ConnecticutSockets(Namespace):
         if user.id != game.who.id:
             return emit("not_your_turn")
 
-        piece = game.place_piece(data['x'], data['y'])
+        piece, victor = game.place_piece(data['x'], data['y'])
         if piece is None:
             # when a created piece is None it
             # is in an invalid position
