@@ -32,29 +32,50 @@ class ConnecticutSockets(Namespace):
 
     @jwt_optional
     def on_move(self, data):
-        print("hi")
         user = get_user()
         if user == None:
             return emit("should_disconnect")
 
-        if 'x' in data and 'y' in data and 'gameid' in data:
-            game = Game.get_by_id(data["gameid"])
-            if user.in_game(game):
-                piece = game.place_piece(data['x'], data['y'])
-                if piece == None:
-                    return emit("invalid_move")
-
-                print(f"placed piece at ({piece.x}, {piece.y})")
-
-                emit("new_piece", data={
-                    "x": piece.x,
-                    "y": piece.y,
-                }, room=self.__class__.users[
-                    (game.other_player(user).id, data["gameid"])
-                ])
-
-            else:
-                return emit("invalid_packet")
-        else:
+        # check packet validity
+        if not ('x' in data and 'y' in data and 'gameid' in data):
             return emit("invalid_packet")
+
+        # check if the game in the packet is actually
+        # a game the user is in
+        game = Game.get_by_id(data["gameid"])
+        if not user.in_game(game):
+            return emit("invalid_packet")
+
+        if not (game.player1 and game.player2):
+            return emit("no_opponent")
+
+        # check if the user can actually move.
+        if user.id != game.who.id:
+            return emit("not_your_turn")
+
+        piece = game.place_piece(data['x'], data['y'])
+        if piece is None:
+            # when a created piece is None it
+            # is in an invalid position
+            return emit("invalid_move")
+
+        try:
+            # try sending to your opponent
+            emit("new_piece", {
+                "x": piece.x,
+                "y": piece.y,
+                "owned": piece.player == user.id,
+            }, room=self.__class__.users[
+                (game.other_player(user).id, data["gameid"])
+            ])
+        except KeyError:
+            # if he doesn't answer, notify sender
+            emit("opponent_offline")
+
+        return emit("new_piece", {
+            "x": piece.x,
+            "y": piece.y,
+            "owned": piece.player == user.id
+        })
+
 

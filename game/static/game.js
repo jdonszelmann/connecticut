@@ -9,14 +9,17 @@ circle = (ctx, x, y, radius) => {
 
 let socket;
 let selected = undefined;
+let gridsizex, gridsizey;
+let cammove;
+let boardsize;
 
 window.onload = () => {
     const canvas = document.getElementById("board");
     const ctx = canvas.getContext("2d");
-    const boardsize = 13;
-    let canmove = false;
-    const gridsizex = canvas.width / boardsize;
-    const gridsizey = canvas.height / boardsize;
+    boardsize = 13;
+    canmove = false;
+    gridsizex = canvas.width / boardsize;
+    gridsizey = canvas.height / boardsize;
     const circleradius = gridsizex / 3;
 
     const clear = () => {
@@ -51,6 +54,19 @@ window.onload = () => {
             circle(ctx,x+gridsizex/2, y+gridsizey/2, circleradius);
             ctx.fill();
         }
+
+        for(let coord of coordinates){
+            const [x, y, owned] = coord;
+
+            if(owned){
+                ctx.fillStyle = rgb(50,240,50, 0.6);
+            }else{
+                ctx.fillStyle = rgb(240,50,50, 0.6);
+            }
+
+            circle(ctx,(x*gridsizex)+gridsizex/2, ((boardsize - y - 1)*gridsizey)+gridsizey/2, circleradius);
+            ctx.fill();
+        }
     };
 
     const connection = () => {
@@ -58,12 +74,14 @@ window.onload = () => {
         socket.on('connect', function(data) {
             print("socket online")
             socket.emit("startup", data={
-                gameid: gamenunmber
+                gameid: gamenumber
             })
         });
 
-        socket.on('move', function(data) {
-            print(data)
+        socket.on('new_piece', function(data) {
+            coordinates.push([data.x, data.y, data.owned]);
+            clear();
+            drawboard();
         });
 
         socket.on('should_disconnect', function(data) {
@@ -83,6 +101,21 @@ window.onload = () => {
 
         socket.on('invalid_move', function(data) {
             alert("You can't make that move!");
+            selected = undefined;
+        });
+
+        socket.on('opponent_offline', function(data) {
+            alert("The server detected that your opponent is offline. Please wait.");
+            selected = undefined;
+        });
+
+        socket.on('no_opponent', function(data) {
+            alert("You don't have an opponent yet. Please wait.");
+            selected = undefined;
+        });
+
+        socket.on('not_your_turn', function(data) {
+            alert("It isn't your turn. Wait for your opponent to move.");
             selected = undefined;
         });
     };
@@ -150,10 +183,13 @@ const move = () => {
         return alert("please make a selection first");
     }
 
+    const x = Math.floor(selected.x/gridsizex);
+    const y = -Math.floor(selected.y/gridsizey) + (boardsize - 1);
+
     socket.emit("move", {
-        x: selected.x,
-        y: selected.y,
-        gameid: gamenunmber,
+        x: x,
+        y: y,
+        gameid: gamenumber,
     })
 };
 

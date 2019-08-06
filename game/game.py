@@ -59,7 +59,8 @@ class Game(database.BaseModel):
         return c
 
     def place_piece(self, x, y):
-        if self.is_legal(x, y):
+        l = self.is_legal(x, y)
+        if l:
             piece = self.set_piece(x, y)
             self.switch_player()
 
@@ -97,7 +98,7 @@ class Game(database.BaseModel):
     def set_piece(self, x, y):
         from .piece import Piece
 
-        with self.__class__._meta.database.atomic():
+        with database.get_db():
             if not (x >= 0 and y >= 0 and x < self.width and y < self.height):
                 return None
 
@@ -106,76 +107,20 @@ class Game(database.BaseModel):
             retid = int(Piece.create(x=x, y=y, player=self.who, game=self).id)
 
             try:
-                # in_range = (
-                #     Piece
-                #     .select()
-                #     .join(Player, on=(Piece.player == Player.id))
-                #     .where(
-                #         (
-                #             ((Piece.x == x  ) & (Piece.y == y-2)) |
-                #             ((Piece.x == x-1) & (Piece.y == y-1)) |
-                #             ((Piece.x == x  ) & (Piece.y == y-1)) |
-                #             ((Piece.x == x+1) & (Piece.y == y-1)) |
-                #             ((Piece.x == x-2) & (Piece.y == y  )) |
-                #             ((Piece.x == x-1) & (Piece.y == y  )) |
-                #             ((Piece.x == x+1) & (Piece.y == y  )) |
-                #             ((Piece.x == x+2) & (Piece.y == y  )) |
-                #             ((Piece.x == x-1) & (Piece.y == y+1)) |
-                #             ((Piece.x == x  ) & (Piece.y == y+1)) |
-                #             ((Piece.x == x+1) & (Piece.y == y+1)) |
-                #             ((Piece.x == x  ) & (Piece.y == y+2))
-                #
-                #           #                     (x, y-2),
-                #           #         (x-1, y-1), (x, y-1), (x+1, y-1),
-                #           # (x-2, y), (x-1, y),           (x+1, y), (x+2, y),
-                #           #         (x-1, y+1), (x, y+1), (x+1, y+1),
-                #           #                     (x, y+2),
-                #
-                #         ) & (Player.id != self.who)
-                #     )
-                # )
-
-                # in_range = (
-                #     Piece
-                #         .select()
-                #         .join(Player, on=(Piece.player == Player.id))
-                #         .where(
-                #         (Piece.x >= max(1, x - 2)) &
-                #         (Piece.x <= min(self.width - 2, x + 3)) &
-                #         (Piece.y >= max(1, y - 2)) &
-                #         (Piece.y <= min(self.height - 2, y + 3)) &
-                #         (Player.id != self.who) &
-                #         (Piece.game == self.id)
-                #     )
-                # )
-
-                def in_rombus (piece, x, y):
-                    return (
-                        ((piece.x == x  ) & (piece.y == y-2)) |
-                        ((piece.x == x-1) & (piece.y == y-1)) |
-                        ((piece.x == x  ) & (piece.y == y-1)) |
-                        ((piece.x == x+1) & (piece.y == y-1)) |
-                        ((piece.x == x-2) & (piece.y == y  )) |
-                        ((piece.x == x-1) & (piece.y == y  )) |
-                        ((piece.x == x+1) & (piece.y == y  )) |
-                        ((piece.x == x+2) & (piece.y == y  )) |
-                        ((piece.x == x-1) & (piece.y == y+1)) |
-                        ((piece.x == x  ) & (piece.y == y+1)) |
-                        ((piece.x == x+1) & (piece.y == y+1)) |
-                        ((piece.x == x  ) & (piece.y == y+2))
-                    )
 
                 in_range = (
                     Piece
                         .select()
                         .join(Player, on=(Piece.player == Player.id))
                         .where(
-                        in_rombus(Piece, x, y) &
+                        (Piece.x >= max(1, x - 2)) &
+                        (Piece.x <= min(self.width - 2, x + 3)) &
+                        (Piece.y >= max(1, y - 2)) &
+                        (Piece.y <= min(self.height - 2, y + 3)) &
                         (Player.id != self.who) &
                         (Piece.game == self.id)
                     )
                 )
-
 
                 checked = []
                 for piece in in_range:
@@ -183,7 +128,7 @@ class Game(database.BaseModel):
                         piece.delete_instance()
 
                     elif piece not in checked:
-                        pool = self.floodfill(piece)
+                        pool = self.floodfill(piece, [])
                         checked += pool
 
                         if not any((
@@ -205,11 +150,8 @@ class Game(database.BaseModel):
         from .piece import Piece
         Piece.delete().where((Piece.x == x) & (Piece.y == y)).execute()
 
-    def floodfill(self, piece, pool=None):
+    def floodfill(self, piece, pool):
         from .piece import Piece
-        if pool == None:
-            pool = []
-
 
         pool.append(piece)
         for px, py in self.get_hooks(piece.x, piece.y):
@@ -236,7 +178,7 @@ class Game(database.BaseModel):
 
         available = set()
 
-        pieces = Piece.select(Piece.x, Piece.y).where(
+        pieces = Piece.select().where(
             (Piece.player == self.who) & \
             (Piece.game == self)
         )

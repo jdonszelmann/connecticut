@@ -7,7 +7,7 @@ from game.routes import *
 from flask import redirect
 import secrets
 import flask
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 from game.socketevents import ConnecticutSockets
 
 path = os.path.dirname(os.path.realpath(__file__))
@@ -71,7 +71,10 @@ class Server(flask.Flask):
 
         @self.socketio.on_error('/websocket')
         def error_handler(err):
+            if err == ExpiredSignatureError:
+                return emit("should_disconnect")
             print(f"A socket error occurred: {err}")
+
 
         self.socketio.on_namespace(ConnecticutSockets('/websocket'))
         routes(self)

@@ -1,6 +1,7 @@
 
 from . import database
 from peewee import CharField, AutoField, ForeignKeyField
+from itertools import chain
 
 class Player(database.BaseModel):
     email = CharField(unique=True, null=False)
@@ -8,6 +9,8 @@ class Player(database.BaseModel):
     password_hash = CharField(null=False)
 
     def in_game(self, game):
-        return game.id in (i.id for i in zip(self.games1, self.games2))
+        return game.id in (
+            i.id for i in chain(self.games1, self.games2)
+        )
 
 

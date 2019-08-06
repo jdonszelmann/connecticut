@@ -12,7 +12,13 @@
 {% include 'gameboard.html' %}
 <script>
     //variables from python
-    const gamenunmber = {{ game.id }}
+    const gamenumber = {{ game.id }}
+    const playernumber = {{ user.id }}
+    const coordinates = [
+        {% for piece in pieces %}
+            [{{piece.x}}, {{piece.y}}, {{ piece.player.id }} == playernumber],
+        {% endfor %}
+    ]
 </script>
 {% endif %}
 

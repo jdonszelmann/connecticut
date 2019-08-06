@@ -6,7 +6,7 @@ player1args = {'username' : 'joe', 'email' : 'a@b.c', 'password_hash' : 'AASDF'}
 player2args = {'username' : 'jane', 'email' : 'c@b.c', 'password_hash' : 'AAASD'}
 
 class TestEngine(DatabaseTestCase):
-    def test_get_all_pieces(self):
+    def test_set_piece(self):
         player1=game.Player.create(**player1args)
         player2=game.Player.create(**player2args)
 
@@ -23,7 +23,7 @@ class TestEngine(DatabaseTestCase):
 
         self.assertEqual(len(list(g.get_all_pieces())), 4)
 
-    def test_set_piece(self):
+    def benchmark_set_piece(self):
         player1=game.Player.create(**player1args)
         player2=game.Player.create(**player2args)
 
@@ -33,11 +33,9 @@ class TestEngine(DatabaseTestCase):
         )
 
 
-        g.set_piece(0, 1)
-        g.set_piece(0, 3)
-        g.set_piece(0, 5)
-        g.set_piece(0, 7)
-
+        for i in range(g.width):
+            for j in range(g.height):
+                g.set_piece(i, j)
 
     def test_get_piece1(self):
         player1 = game.Player.create(**player1args)

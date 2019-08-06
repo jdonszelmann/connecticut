@@ -7,7 +7,7 @@ from flask_jwt_extended import jwt_optional, jwt_required
 from email.utils import parseaddr
 from game.game import Game
 from .util import *
-from .socketevents import ConnecticutSockets
+import peewee
 
 def routes(app):
     @app.route("/game")
@@ -22,25 +22,33 @@ def routes(app):
             existinggame = Game.create_default(
                 player1=user
             )
+        elif existinggame.player1.id == user.id:
+            existinggame = Game.create_default(
+                player1=user
+            )
         else:
             existinggame.player2 = user
             existinggame.save()
 
         gameid = existinggame.id
-
         return redirect(f"/game/{gameid}", 302)
 
     @app.route("/game/<int:game_id>")
     @jwt_required
     def specificgame(game_id):
-        user = get_user()
-        if user == None:
-            return redirect("/login", 302)
-        game = Game.get_by_id(game_id)
-        if user != game.player1 and user != game.player2:
-            return redirect("/", 302)
+        try:
+            user = get_user()
+            if user == None:
+                return redirect("/login", 302)
+            game = Game.get_by_id(game_id)
+            if user != game.player1 and user != game.player2:
+                return redirect("/", 302)
+            pieces = game.get_all_pieces()
 
-        return render_template("game.html", user=user, game=game), 200
+
+            return render_template("game.html", user=user, game=game, pieces=pieces), 200
+        except peewee.DoesNotExist:
+            return redirect("/", 302)
 
     @app.route("/")
     @jwt_optional
