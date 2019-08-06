@@ -67,15 +67,15 @@ class Game(database.BaseModel):
             left, right, up, down = False, False, False, False
 
             if piece:
-                for knot in self.flood_bridge(piece, []):
-                    if x == 0:
+                for kx, ky in self.flood_bridge(piece, []):
+                    if kx == 0:
                         left = True
-                    elif x == self.width - 1:
+                    elif kx == self.width - 1:
                         right = True
 
-                    if y == 0:
+                    if ky == 0:
                         down = True
-                    elif y == self.height - 1:
+                    elif ky == self.height - 1:
                         up = True
 
                     if (left and right) or (up and down):
@@ -198,8 +198,6 @@ class Game(database.BaseModel):
                     if neighbor not in pool:
                         for nx, ny in self.flood_bridge(neighbor, pool):
                             yield nx, ny
-
-        return pool
 
 
 
