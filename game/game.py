@@ -166,7 +166,6 @@ class Game(database.BaseModel):
             # get the created piece from the database. If it doesnt exist anymore, return None
             return Piece.get_or_none(Piece.id == retid)
 
-#
     def remove_piece(self, x, y):
         from .piece import Piece
         Piece.delete().where((Piece.x == x) & (Piece.y == y)).execute()
