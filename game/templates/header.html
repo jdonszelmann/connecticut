@@ -1,0 +1,6 @@
+<div id="header">
+    <h1 onclick="window.location='/'">Connecticut</h1>
+    {% if user != None %}
+        Logged in as {{ user.username }} (debug: {{user.id}})
+    {% endif %}
+</div>

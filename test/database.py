@@ -2,6 +2,7 @@ import unittest
 import game
 import peewee
 import os
+import sys
 
 testdbname = "test.db"
 
@@ -11,4 +12,5 @@ class DatabaseTestCase(unittest.TestCase):
         game.open_connection(db, drop=True)
 
     def tearDown(self) -> None:
-        os.remove(testdbname)
+        if sys.platform == 'linux':
+            os.remove(testdbname)

@@ -9,7 +9,8 @@ class Config(BaseModel):
         "defaultwidth" : 13,
         "defaultheight": 13,
         "address": "0.0.0.0",
-        "port": "8000"
+        "port": "8000",
+        "defaultname": "<no name>"
     }
 
     # overwrites the default configuration. Watch out with this as it will persist! use cls._restore() to reset it

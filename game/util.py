@@ -1,4 +1,4 @@
-from ..player import Player
+from game.player import Player
 from flask_jwt_extended import get_jwt_identity
 
 def get_user():

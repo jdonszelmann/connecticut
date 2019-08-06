@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+
+    {% include 'head.html' %}
+
+    <body>
+        {% include 'header.html' %}
+
+        <div id="game">
+            {% if user != None %}
+                {% include 'gameselect.html' %}
+
+                <h2>Your games:</h2>
+                {% for game in user.games1:%}
+                    {% include 'playbutton.html' %}
+                {% endfor %}
+                {% for game in user.games2:%}
+                     {% include 'playbutton.html' %}
+                {% endfor %}
+            {% else %}
+                    {% include 'homebuttons.html' %}
+            {% endif %}
+            </div>
+    </body>
+</html>
