@@ -5,14 +5,23 @@ class BaseModel(peewee.Model):
     class Meta:
         pass
 
+current_database = None
+def get_db():
+    if current_database is None:
+        raise ValueError("Db not initialized yet. Open a connection first.")
+    return current_database
+
 def open_connection(db, drop=False):
+    # bind every table to this database
     for i in BaseModel.__subclasses__():
         i.bind(db)
 
+    global current_database
+    current_database = db
 
     if drop:
-        db.drop_tables(BaseModel.__subclasses__())
-
+        for i in BaseModel.__subclasses__():
+            i.drop_table()
     try:
         db.connect()
     except peewee.OperationalError:

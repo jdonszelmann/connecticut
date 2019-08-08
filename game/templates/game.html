@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+
+{% include 'head.html' %}
+
+<body>
+{% include 'header.html' %}
+
+{% if game == None or user == None%}
+<script>window.location = "/"</script>
+{% else %}
+{% include 'gameboard.html' %}
+<script>
+    //variables from python
+    const gamenumber = {{ game.id }}
+    const playernumber = {{ user.id }}
+    const coordinates = [
+        {% for piece in pieces %}
+            [{{piece.x}}, {{piece.y}}, {{ piece.player.id }} == playernumber],
+        {% endfor %}
+    ]
+</script>
+{% endif %}
+
+<div id="bottombar">
+    <a class="button headerbutton" onclick="move()">Make move</a>
+</div>
+</body>
+</html>
+
